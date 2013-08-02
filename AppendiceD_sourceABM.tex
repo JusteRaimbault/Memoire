@@ -1,0 +1,833 @@
+%% LyX 2.0.5.1 created this file.  For more info, see http://www.lyx.org/.
+%% Do not edit unless you really know what you are doing.
+\documentclass[english]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{luainputenc}
+\usepackage{listings}
+\usepackage{babel}
+\begin{document}
+
+\title{Source code for Agent-based model}
+
+\maketitle
+
+\section*{Main code}
+
+\begin{lstlisting}[basicstyle={\scriptsize}]
+extensions[gis test profiler nw numanal]
+
+__includes[   
+	"[...]/EuclidianDistancesUtilities.nls"
+	"[...]/StringUtilities.nls"
+	"[...]/SortingUtilities.nls"
+	"[...]/ListUtilities.nls"
+	"[...]/TypesUtilities.nls"
+	"[...]/FileUtilities.nls"
+	"[...]/LinkUtilities.nls"
+	"[...]/NetworkUtilities.nls"
+    "[...]/GISUtilities.nls"
+	"setup.nls"
+	"calibration.nls"
+	"refscenarii.nls"
+]
+
+globals [
+  ;;utils variables
+  building-layer-data
+  transport-layer-data
+  green-layer-data
+  services-layer-data
+
+  ;;network include vars
+  paths-layer-data
+  remaining-links
+  remaining-vertexes
+  cluster-treshold
+
+  flats-list-by-rooms
+
+  ;coefficient before the derivative in mean unemployment equa diff
+  unemployment-diff
+  
+  ;stop?
+  tst
+
+  ;;real variables
+  ;;considered as a macro variable,
+  ;;may evolve in long time series,
+  ;;according to external data? 
+  ;unemployment-rate
+
+  ;basically considered as linear function
+  ;of income ; no taxes if get social help
+  taxes-proportion     
+
+  ;very important : closely linked to the time scale, if small time step
+  ;as 2 weeks, must be small ! to reproduce real situations with a lot of steps,
+  ;such small step is needed
+  job-opportunities-per-year 
+ 
+  ;time-serie to match
+  unemployment-data       
+  unemployment-data-time-scale
+       
+  ;max proportion of population that can get social help
+  ;social help is attributed to the people with negative balance
+  ;first approx bring balance to zero
+  ;social-help-rate
+
+  ;approximate cost of a person per month (food etc)
+  person-cost
+
+  ;time for each tick, in years
+  ;time-interval    
+     
+  ;treshold under which you can get social help
+  ;expressed in Kr/person (including children) -> allocs
+  ;social help
+  ;social-help-treshold
+
+  ;max fraction of the population which can get social help
+  social-help-max-recipient-proportion
+  ; max amount perceived from social help
+  social-help-max-amount
+
+  ;;rent update
+  ;law regulation
+  max-rent-per-square-meter
+  ; normalisation coef for the influence of balances on rents
+  ;bnorm
+  ;bref 
+
+  ;params for immigrants
+  max-immigrant-number-per-year
+
+  ;;globals for random config
+  couple-proba
+  children-mean
+  ;income-mean
+  ;income-sigma
+  rent-mean
+  rent-sigma
+
+  ;;;;;;;;;;;;;
+  ;;globals for extended aspects
+  ;;;;;;;;;;;;;
+
+  ;;external agents satisfaction
+  green-space-satisfaction-individual-norm-factor
+  services-satisfaction-individual-norm-factor
+
+  ;;influence parameters
+  ;;can move according to global economic situation
+  standard-influence-on-rent 
+  ;energy-cost  
+  ;;data from questionnaire : list of listes
+  questionnaire-data
+
+  ;;calibration variables
+  ;;oblective for calibration
+  rents-obj
+  incomes-obj
+  ;;output file
+  ;calib-file
+  ;calib-tick
+
+  ;;;;;;;
+  ;;Globals for refurbishment description : parameters, new layers
+  ;;;;;;;
+  ;ref-living-standard-change-factor
+  ;ref-energy-change-factor
+  additional-green-spaces-layer
+  additional-services-layer
+]
+
+
+;;Basic breeds
+
+breed [flats flat]
+
+breed [buildings building]
+
+breed [households household]
+
+;;new breeds
+breed [services service]
+
+breed [transports transport]
+
+breed [green-spaces green-space]
+
+;;;;;;;;;;;;;;;;;;;;;;;
+;;network include breeds
+;;;;;;;;;;;;;;;;;;;;;;;
+breed [vertexes vertex]
+
+breed [abstract-gis-paths abstract-gis-path]
+
+abstract-gis-paths-own [
+  gis-feature
+  vertexes-list
+]
+
+undirected-link-breed [paths path]
+
+paths-own [path-length]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;
+;; Owned variables
+;;;;;;;;;;;;;;;;;;;;;;
+
+buildings-own [
+  ;corresponding gis VectorFeature
+  gis-shape
+
+  ;list of flats contained in the building
+  in-flats
+
+  ;numeric value of rents in the building
+  rent-per-square-meter
+
+  ;;energy perf 
+  ;initial value, a refurbishment changes this value
+  building-energetic-performance
+]
+
+households-own[
+  ;list of incomes
+  incomes
+  total-income
+
+  ;for each people, level of studies in years.
+  ;shows potentiality to find a job (children have 0 for example)
+  ;studies
+
+  ;years of experience in job
+  experiences
+
+  social-help? 
+  
+  ;economic bilan of the last period
+  global-balance
+
+  ;number of people in the household
+  people-number
+
+  ;quite constant, shows the tendancy to consum
+  consumption-rate
+
+  ;pointer to the occuped flat
+  occupied-flat
+    
+  ;;life quality aspects
+  green-space-satisfaction
+  services-satisfaction
+]
+
+flats-own[
+  ;number of rooms
+  rooms
+  ;surface, directly linked to number of rooms.
+  surface
+
+  rent
+
+  ;pointer to the occuping household
+  occupant
+
+  ;;living conditions variables
+  living-standard
+
+ ;;% of total rent
+  energetic-performance
+
+  ;;caches lists for distances
+  ;index corresponds to place in the sorted list of green by who (avoids a hashmap)
+  distances-to-green-spaces
+  distances-to-services
+]
+
+green-spaces-own[
+ ;what can evolve through strong modification of district situation or refurbishment
+ quality
+]
+
+services-own[quality ;idem as for green-spaces ]
+
+to new-household [income]
+  ;;set people
+  let r random-float 1
+  ifelse r >= couple-proba [set people-number 1]
+     [set people-number 2 + (random 2 * children-mean)]
+     ;;set studies !! BEFORE incomes, to be coherent with the following
+     ;;(self coherence of the implementation)
+     let s1 floor (random-normal 3 2)
+	 let s2 floor (random-normal 3 2)
+     ifelse people-number = 1 [set studies (list s1)]
+     [set studies list s1 s2]
+     ;;set incomes or unemployment
+     set incomes []
+     foreach studies [
+       let i 0 let u random-float 100
+       if u > unemployment-initial-rate [
+		set i max list 10000 (random-normal ((income-mean - (income-sigma))
+			+ (k-studies * ? * income-sigma)) income-sigma)]
+        set incomes lput i incomes
+     ]
+     ;;set experiences
+     set experiences list 0 0
+     foreach incomes [
+      set experiences replace-item position ? incomes experiences (0.5 + (random 20 / 2))]
+     ;;find flat
+     find-flat
+
+     ;;social help
+     set social-help? false 
+
+     ;;default satisfactions
+     set green-space-satisfaction 0
+     set services-satisfaction 0 
+
+end
+
+;household procedure to find the best flat
+to find-flat
+  let i min list max list 0 (people-number - 2) 2
+  let f nobody let d item i flats-list-by-rooms
+  ifelse d != [] [
+	set f first d set flats-list-by-rooms replace-item i flats-list-by-rooms but-first d]
+[set f one-of flats with [occupant = nobody] foreach flats-list-by-rooms [set ? remove f ?]]
+  set occupied-flat f ask f [set occupant myself]
+end
+
+to refurbishment
+  ;;setup
+  set-random-initial-configuration
+  ;;go for first half
+  while [not stop?] [go]
+  ;;;;;
+  ;;proceed to refurbishment
+  ;;;;;
+  log-out "Refurbishment..."
+  ask flats [
+    if energy? [set energetic-performance energetic-performance * ref-energy-change-factor]
+    if standard? [       set living-standard living-standard * ref-living-standard-change-factor
+      ;;need to change rent according to the change of living-standard
+      set rent rent * ref-living-standard-change-factor
+    ]
+  ] 
+  
+  ;;add new layers for green spaces and services if needed
+  ;;delete old, because new layer can be less?
+  ask green-spaces [die]
+  ask services [die]
+  set additional-green-spaces-layer gis:load-dataset "[...]/langangen_green_new.shp"
+  set additional-services-layer gis:load-dataset "[...]/langangen_services.shp"
+  setup-action-gis-layers additional-green-spaces-layer additional-services-layer
+  ;;new calculation of distances   ask flats [set-cache-distances]
+  
+  ;;simulate following years
+  set stop? false 
+  let m max-time
+  set max-time max-time * 2
+  while [not stop?] [go]
+  set max-time m 
+end
+
+
+to go
+  log-out word "Going for tick " ticks
+  set-data
+  if not stop?[
+   update-work-situations
+   update-social-helps
+   update-rents
+   calculate-balances
+   emigrate
+   immigrate
+   update-drawing
+   ;;add new effects : integration on time step of "satisfaction" regarding to new aspects
+   ;;also influence of energy and living standard on rents
+   update-life-quality-reporters
+   tick
+   log-out word "Total time : " (ticks * time-interval )   ]
+end
+
+to test-run-duration
+  profiler:reset
+  profiler:start
+  let time 0
+  set-random-initial-configuration
+  while [not stop?][
+    go
+    set time time + profiler:inclusive-time "go"
+    show profiler:inclusive-time "go"
+  ]
+  show profiler:inclusive-time "go"
+end
+
+to calibrate
+  let filename word word "calibration/cal_" timer ".sci"
+  print-in-file filename "bref=[];bnorm=[];income-mean=[];rents=[];"
+  set bref 5000
+  set bnorm 10000
+  set income-mean 10000
+  let i 1
+     repeat 10 [
+         repeat 10 [
+           repeat 10 [
+              set-random-initial-configuration
+             let out (list mean [rent / surface] of flats)        let j 1                while [not stop?][go if (ticks * time-interval) mod 1 = 0 [set out lput mean [rent / surface] of flats out]]          print-in-file filename word word word word "bref(" i ")=" bref ";"        print-in-file filename word word word word "bnorm(" i ")=" bnorm ";"        print-in-file filename word word word word "incomemean(" i ")=" income-mean ";"        foreach out [print-in-file filename word word word word word word "rents(" i "," j ")=" ? ";" set j j + 1]               set income-mean income-mean + 1000         set i i + 1
+     ]            set bnorm bnorm + 2000      set income-mean 10000      ]          set bref bref + 1000     set bnorm 10000     set income-mean 10000   ]       end
+
+to update-life-quality-reporters
+  log-out "Calculating life quality reporters..."
+  ;snapshot
+  if green? or services? or standard?[ 
+;;gain time if nothing pb
+  ask households [ 
+   if green? [
+set green-space-satisfaction green-space-satisfaction-reporter
+] 
+   if services? [set services-satisfaction services-satisfaction-reporter] 
+ ]
+  ]
+end
+
+to-report green-space-satisfaction-reporter 
+  report norm-p green-space-satisfaction-individual-norm-factor [distances-to-green-spaces] of occupied-flat
+end
+
+to-report services-satisfaction-reporter
+   report norm-p services-satisfaction-individual-norm-factor [distances-to-services] of occupied-flat
+end
+
+to set-data
+     ifelse (ticks * time-interval) > max-time [set stop? true][ 
+ ;;unemployment
+  if unemp-ext-data?[
+    if unemployment-data != [] 
+   [if (ticks * time-interval) mod unemployment-data-time-scale = 0 [
+set unemployment-initial-rate first unemployment-data set unemployment-data but-first unemployment-data]]   ]   ]   ;;other data?       end
+to update-work-situations
+  ;;add time experience for workers
+  ask households [foreach incomes [
+if ? != 0 [let i position ? incomes
+set experiences replace-item i experiences (item i experiences + time-interval)]]]
+     ;;some unemployed find jobs and others loose their jobs.
+  let u unemployed-number
+  let new-workers-number max list 0 
+     min list u floor (random-normal (job-opportunities-per-year * time-interval) (u / 10))
+   let unemployed to-list households with [member? 0 incomes]
+  repeat new-workers-number [;people finding a job
+    if unemployed != [] [
+    ask one-of unemployed [
+      let w 1 - bool-to-int ((item 0 incomes) = 0)
+ ;index of unemployed guy 
+     ;gets job and new income!
+      set incomes replace-item w incomes max list 10000 (random-normal ((income-mean - (income-sigma)) +
+(k-studies * (item w studies) * income-sigma)) income-sigma)
+      if not member? 0 incomes [set unemployed remove self unemployed]
+      ] 
+   ]
+  ]
+     ;;loose of jobs - ratio has to match unemployment-growth variable
+  let job-loosers-number max list 0 min list (actives-number - u)
+floor (random-normal (new-workers-number + (actives-number * unemployment-initial-rate / 100) - u) (u / 10))
+  set unemployment-diff job-loosers-number - new-workers-number
+  let employed to-list households with [sum incomes > 0]
+  repeat job-loosers-number [
+;people loosing their job
+    if employed != [][
+    ask one-of employed [
+      let w bool-to-int (item 0 incomes = 0) 
+     ;;looses income and experience 
+     set incomes replace-item w incomes 0 
+     set experiences replace-item w experiences 0
+      if sum incomes = 0 [set employed remove self employed]
+    ]
+    ]
+  ]
+        ;;promotion for experienced workers
+  if with-promotions? [
+    ask households [
+      foreach experiences [
+let i position ? experiences if ? > 0 and ? mod 5 = 0 [
+set incomes replace-item i incomes (item i incomes + 500)]]
+    ]
+  ] 
+end
+
+to update-social-helps 
+ ask households [set social-help? false]
+  ;;calculate provisory balance to see if could get the social help 
+ let eligibles households with [prov-balance < social-help-treshold] 
+ ask min-n-of min list count eligibles floor
+     (social-help-max-recipient-proportion * count households / 100 ) eligibles [prov-balance]
+     [set social-help? true]
+end
+
+;aux function
+to-report prov-balance 
+ report (sum incomes - ([rent] of occupied-flat)) / people-number
+end
+
+to update-rents 
+ ;;rents adapt themsleves according to neighborhood value and people wealth 
+ ;;external control (law), also externalities as unemployment? 
+  ;;one time per year only? -> can change it  
+   if ticks * time-interval mod 1 = 0 and rent-updates? [
+      ;; update rents
+     let r mean [rent] of flats
+     let b mean [global-balance] of households
+     ;;for sts influence: other parameter than initial influence, because differential relation here !
+    ask flats [
+    let max-rent surface * max-rent-per-square-meter
+   set rent min list max-rent (((rent * ((1 + (b - bref)/ bnorm))) ))] *
+       (1 + standard-influence-on-rent * (living-standard - 1) / 2))]+ (rent-coef * (r - rent)))]   ]
+  end
+
+to calculate-balances   ask households [set global-balance balance if social-help? [set global-balance min list (global-balance + social-help-max-amount) 500]] end
+
+
+to-report balance   
+;;basic balance, linear taxes.
+     ;;energy consumption : represented as a proportion of the rent
+ ;;all in counted % one month
+       report (sum incomes - ([rent] of occupied-flat)) - (taxes-proportion * sum incomes) - (person-cost * people-number) - ([energetic-performance] of occupied-flat * energy-cost)
+end
+
+to emigrate
+ if drastic? [ ask households with [global-balance < die-treshold] [ask occupied-flat [set occupant nobody] die]]         
+  end
+
+
+to immigrate
+  if new-inhabitants? [
+	let i workers-mean-income
+	repeat min list (count flats with [occupant = nobody]) floor (max-immigrant-number-per-year * time-interval) [
+		create-households 1 [new-household i]]
+	]
+end
+
+
+;;Utilities functions
+to-report unemployed-number
+  let res 0 ask households [
+	foreach incomes [if ? = 0 [set res res + 1]]]
+  report res
+end
+
+to-report actives-number
+  report sum [length incomes] of households
+end
+
+to-report workers-mean-income
+  let res 0 let c 0
+  ask households [
+	foreach incomes [ if ? != 0 [set res res + ? set c c + 1]]
+  ]
+  report res / c
+end
+
+to-report unemployment-coef
+  report unemployment-diff
+end
+
+to update-drawing
+  log-out "Drawing..."
+  clear-drawing
+  gis:set-drawing-color brown
+  gis:draw paths-layer-data 2
+  gis:set-drawing-color grey
+  gis:draw building-layer-data 1
+  if green? [gis:set-drawing-color green   gis:draw green-layer-data 5]
+  if services? [gis:set-drawing-color red   gis:draw services-layer-data 5]
+  if transport? [gis:set-drawing-color orange   gis:draw transport-layer-data 3] 
+  ask turtles [set hidden? true] 
+  let mir min [rent] of flats
+  let mar max [rent] of flats
+  ask patches with [count flats-on self > 0][
+    set pcolor scale-color red (mean ([rent] of flats-on self)) (mir - 50) (mar + 50)]
+  let mii min [(sum incomes) / people-number] of households
+  let mai max [(sum incomes) / people-number] of households 
+  ask households [
+    setxy [xcor] of occupied-flat [ycor] of occupied-flat set shape "person" set size people-number / 2 
+    set hidden? false
+    set color scale-color green ((sum incomes) / people-number) (mii - 50) (mai + 50)
+    if member? 0 incomes [set color pink]
+     if social-help? [set color yellow]
+    ]
+end
+
+to log-out [text] 
+ if debug? [output-print text]
+end
+\end{lstlisting}
+
+
+
+
+
+\section*{Local includes}
+
+
+\subsection*{File setup.nls}
+
+\begin{lstlisting}[basicstyle={\scriptsize}]
+to draw-gis-layers
+  ca
+     log-out "Loading and Drawing GIS data..."
+     ask patches [set pcolor white]
+     ;;load gis layers
+  set building-layer-data gis:load-dataset "[...]/langangen_buildings_pol.shp";user-new-file
+  set paths-layer-data gis:load-dataset "[...]/langangen_roads.shp"
+  set transport-layer-data gis:load-dataset "[...]/langangen_transport.shp"
+  set green-layer-data gis:load-dataset "[...]/langangen_green.shp"
+  set services-layer-data gis:load-dataset "[...]/langangen_services.shp"
+     ;;set enveloppes - these two layers enough?
+  gis:set-world-envelope gis:envelope-union-of gis:envelope-of building-layer-data gis:envelope-of paths-layer-data
+     ;;draw buildings
+  gis:set-drawing-color black
+  foreach gis:feature-list-of building-layer-data [
+    ;if gis:property-value ? "ID" = target-id [gis:set-drawing-color red]
+    ;foreach explode ";" gis:property-value ? "ADRESS" [
+if member? ? adresses [gis:set-drawing-color blue]]
+    gis:fill ? 1 gis:set-drawing-color black
+    let c gis:location-of gis:centroid-of ?
+    ;create-turtles 1 [setxy item 0 c item 1 c set label-color red set size 0 set label gis:property-value ? "ADRESS"]   ]
+  gis:set-drawing-color white
+  foreach gis:feature-list-of building-layer-data [
+let v ? foreach gis:feature-list-of building-layer-data [if v != ? and gis:contains? v ?[gis:fill ? 1]]]
+
+    ;;draw roads
+  gis:set-drawing-color brown
+  gis:draw paths-layer-data 2
+     ;;draw other layers NOT NEEDED
+ ;;if green? [gis:set-drawing-color green 
+ ;;gis:draw green-layer-data 5]
+  ;;if services? [
+gis:set-drawing-color red   ;;gis:draw services-layer-data 5]   if transport? [gis:set-drawing-color orange   gis:draw transport-layer-data 3]   
+   end
+
+
+to load-csv-properies [filename property-name layer-data];load from csv file of the form ADRESS;PROPERTY
+  let data but-first read-file filename
+  foreach data [
+    let value first but-first explode ";" ?
+    foreach layer-data [
+       ;gis:set-property-value
+     ]
+ ]
+end
+
+
+;;set the static agent that are not supposed to change.
+to set-static-agents
+  log-out "Setting up static agents..."
+        ;;loading some building data 
+   let adresses import-data "data/data.csv" 0
+  let energy map read-from-string import-data "data/data.csv" 1
+
+    ;;load questionnaire data
+  load-questionnaire-data "[...]/questionnaire.csv"
+     ;creation of buildings
+  foreach gis:feature-list-of building-layer-data [
+    create-buildings 1 [
+      set gis-shape ?
+set in-flats []
+set hidden? true
+      let i 0 foreach explode ";" gis:property-value ? "ADRESS" [if member? ? adresses [set i position ? adresses set building-energetic-performance item i energy]]       if building-energetic-performance = 0 [set building-energetic-performance mean energy]     ]   ]            ;;create abstract network -> BEFORE SETTING FLATS !!! (need network to calculate caches distances)   ;;cluster treshold is fixed? Y, very small   output-print "Extracting abstract network from GIS network..."   set cluster-treshold 0.5   create-network      ;;setup services and green spaces through their gis-layer passed as a variable   ;;[the external function is called also during a refurbishment with additional layers]   setup-action-gis-layers green-layer-data services-layer-data      ;;set transport stations       ;;NOT IMPLEMENTED YET. Seems not to be necessary      ;;creation of flats   set-flats     
+               end
+
+
+to setup-action-gis-layers [green-layer services-layer]
+  ;;set green spaces - Idem network (targets need to exist!)
+  if green? [foreach gis:feature-list-of green-layer [
+   foreach gis:vertex-lists-of ? [
+    foreach ? [let loc gis:location-of ?
+     create-green-spaces 1 [
+setxy first loc first but-first loc set color green set shape "circle"]]]]]
+
+    ;;set services
+  if services? [foreach gis:feature-list-of services-layer [
+   foreach gis:vertex-lists-of ? [
+    foreach ? [
+let loc gis:location-of ?
+create-services 1 [
+setxy first loc first but-first loc set color red set shape "circle"]]]]]
+
+  end
+
+to set-flats
+  output-print "Filling buildings with flats..."
+ create-flats 1 [setxy 0 0 set shape "house" set size 0.5 set color yellow set occupant nobody]
+  let current-flat one-of flats
+  let previous-flat nobody
+  let filled? false
+  let previous-building nobody
+  snapshot      ;;procedure to fill the building with flats seems weird, but no direct method to get patches within a gis shape   ;; -> maybe create this function ?
+  ;;doesn't seems to work well : too big spatial unit ; issue with rent graphs?  ;
+ ask buildings [
+;    ask patches-in gis-shape [
+set pcolor yellow  sprout-flats 1 [set shape "house" set size 0.5 set color yellow set occupant nobody]] ;  ]
+    
+while [not filled?][      ;;fix if in a building      let fixed? false      ask buildings [        let b self ask current-flat [          ifelse not fixed? [            if gis:contains? [gis-shape] of myself self [              hatch-flats 1 [                set previous-flat current-flat set current-flat self                ask b [                  set in-flats lput previous-flat in-flats set previous-building self                ]              ]
+              set fixed? true
+                           ;;since current flat has been fixed in previous flat, able to calculate cache distances to activities
+              ;;update these distances if change in configuration of green-space/services : case of a refurbishment e.g.
+             set-cache-distances
+                         ]
+         ]           [ if gis:contains? [gis-shape] of myself self [ask previous-building [set in-flats remove previous-flat in-flats] ask previous-flat [die]]  ;;two and only two max containing shape?               ]          ]      ]            ;;advance current-flat in space      ask current-flat [ifelse ycor = world-height - 1 and xcor = world-width - 1 [set filled? true] [set ycor (ycor + 0.5 ) mod (world-height - 0.5) if ycor = 0 [set xcor (xcor + 0.5 ) mod (world-width - 0.5)]]]      if filled? [ask current-flat[die]]   ] end
+;;flat procedure, set caches distances. called when setup or services update ;;need snapshot before to set-cache-distances   set distances-to-green-spaces []   foreach sort-on [who] green-spaces [set distances-to-green-spaces lput distance-through-network ? distances-to-green-spaces]   set distances-to-services []   foreach sort-on [who] services [set distances-to-services lput distance-through-network ? distances-to-services]            end
+to set-static   draw-gis-layers   set-static-agents end
+
+
+to set-random-initial-configuration
+     ;;when multiple iterations (ex calibration), don't do it each tick to gain time
+  set-static
+     log-out "Setting up dynamic agents..."
+        ;;set "fixed" global vars
+  set couple-proba 0.8
+  set children-mean 1
+  ;set income-mean 16000
+  ;set income-sigma 3000
+  set rent-mean 72.45
+  set rent-sigma 6.9
+  ;set time-interval 0.1 ;6month
+  set social-help-max-recipient-proportion 25
+  set taxes-proportion 0.1
+  set person-cost 1500
+  set social-help-max-amount 15000
+  set job-opportunities-per-year 100
+  set max-immigrant-number-per-year 10
+  set max-rent-per-square-meter 200
+  ;set bnorm 30000
+  set stop? false
+     let data read-file "data/unemployment.csv"
+  set unemployment-data-time-scale read-from-string first but-first data
+  set unemployment-data map read-from-string but-first but-first data
+
+       ;;extended globals
+ set green-space-satisfaction-individual-norm-factor 0.01
+  set services-satisfaction-individual-norm-factor 20
+     set standard-influence-on-rent 0.2
+     ;set energy-cost 10
+     log-out "Variables"      
+
+;;fix rents
+  ask buildings [
+    set rent-per-square-meter random-normal rent-mean rent-sigma
+         let energy-per-month building-energetic-performance / 12
+         ;;set foreach flat rooms, surface and rent - and standard and energetic performances
+    foreach in-flats [
+      let r random-float 1
+      ifelse r > couple-proba [ask ? [set rooms 2]]
+      [ifelse r > couple-proba / 2 [ask ? [set rooms 3]][ask ? [set rooms 4]]]
+      ask ? [
+        ;;3 levels of standard, what does it represent? ; impact on rent? depends of parameter...
+        set living-standard random 3 + 1 
+                         ;;surface : simplified by linear to rooms
+        set surface rooms * 20
+                          ;;energetic perf : fixed for all? initial value from gis-data, ref change this value.
+        set energetic-performance energy-per-month * surface
+                 ;;rent - initial value so standard is important 
+       set rent ([rent-per-square-meter] of myself) * surface * (1 + (standard-influence-on-rent * (living-standard - 1) / 2))                ]     ]                  ]
+    log-out "Rents"
+
+    ;;populate the district
+  ;;again quite weird method? lexically sort by (rent,rooms)
+     set flats-list-by-rooms []
+  set flats-list-by-rooms lput sort-by [lexcomp ?1 ?2 (list task [rent])] flats with [rooms = 2] flats-list-by-rooms
+  set flats-list-by-rooms lput sort-by [lexcomp ?1 ?2 (list task [rent])] flats with [rooms = 3] flats-list-by-rooms
+  set flats-list-by-rooms lput sort-by [lexcomp ?1 ?2 (list task [rent])] flats with [rooms = 4] flats-list-by-rooms
+  repeat floor (count flats ) * initial-occupied-flats / 100 [
+        create-households 1 [
+           new-household income-mean
+     ]
+   ]
+     log-out "Households" 
+    reset-ticks
+    update-drawing
+end
+
+
+to load-questionnaire-data [file]
+  set questionnaire-data []
+  file-open file
+  show file-read-line
+;;skip variable names line
+  while [not file-at-end?][
+     set questionnaire-data lput first explode ";" file-read-line questionnaire-data
+  ]
+  file-close
+end
+
+to-report import-data [file index]
+  let res []
+  file-open file
+  while [not file-at-end?][
+     set res lput item index explode ";" file-read-line res
+  ]
+  file-close
+  report res
+end
+\end{lstlisting}
+
+
+
+\subsection*{File calibration.nls}
+
+\begin{lstlisting}[basicstyle={\scriptsize}]
+;;simple run on the simplex
+to calibrate-with-simplex
+  set calib-file word word "calibration/calibSimplexMeanSquares_" date-and-time ".sci"
+  set calib-tick 1
+  print-in-file calib-file "ms=[];incomemean=[];bref=[];bnorm=[];"
+  ;let guess [10000 34000 13000]
+  let guess [12000 30000 17000] ;; income guess has to be greater than treshold, if not bad time
+     let tsk task [runmodel ?]
+  let result numanal:simplex guess tsk simplex-tolerance 1000
+ log-out result end
+
+
+to-report runmodel [params]
+  set bref first params
+  set bnorm first but-first params
+  set income-mean first but-first but-first params
+  set-random-initial-configuration
+     ;;data : beware of file length !
+  set rents-obj map read-from-string but-first read-file "data/rentsNLData.csv"
+  set incomes-obj map read-from-string but-first read-file "data/incomesSimplexObj.csv"
+  set max-time length rents-obj
+          log-out "In simplex, running model..."
+  log-out word "bref:" bref 
+ log-out word "bnorm:" bnorm
+  log-out word "incomemean:" income-mean
+            let out 0
+  let i 0
+  while [not stop?][
+    go 
+   if (ticks * time-interval) mod unemployment-data-time-scale = 0 and ticks > 1 and not stop? [
+      log-out unemployment-data
+      set out out +
+       ((((mean [rent / surface] of flats) - (item i rents-obj)) ^ 2))
+      + ((((workers-mean-income) - (item i incomes-obj * 1000 / 12)) ^ 2))
+      set i i + 1
+   ]
+ ]
+       log-out word "mean-square-error" out
+  print-in-file calib-file word word word word "ms(" calib-tick ")="  min list out 1000000000 ";"
+  print-in-file calib-file word word word word "incomemean(" calib-tick ")=" income-mean ";"
+  print-in-file calib-file word word word word "bref(" calib-tick ")=" bref ";"
+  print-in-file calib-file word word word word "bnorm(" calib-tick ")=" bnorm ";"
+  set calib-tick calib-tick + 1
+  set calib-error round out
+  report out
+end
+\end{lstlisting}
+
+\end{document}

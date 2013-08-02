@@ -1,0 +1,246 @@
+%% LyX 2.0.5.1 created this file.  For more info, see http://www.lyx.org/.
+%% Do not edit unless you really know what you are doing.
+\documentclass[english]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{luainputenc}
+\usepackage{graphicx}
+
+\makeatletter
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% LyX specific LaTeX commands.
+\newcommand{\noun}[1]{\textsc{#1}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% User specified LaTeX commands.
+\usepackage{background}
+
+
+\SetBgOpacity{0.3}
+\SetBgColor{black!20}
+
+\setcounter{page}{50}
+
+\makeatother
+
+\usepackage{babel}
+\begin{document}
+
+\title{Paper D\\
+Local and global design of a new district through evolutionary algorithm}
+
+\maketitle
+\vspace{2cm}
+
+\begin{abstract}
+The study of refurbishment of old building stocks through Agent-based
+Modeling in  had voluntary occulted the background problem of a parallel
+building of a totally new district (Project Homes for Tomorrow )
+which would have strong influence on the existing one. Although the
+design has already been done and the construction process is well
+advanced, we propose here to follow the thought experience of proposing
+a possible design from scratch through computational methods for this
+new district. We explore first the question of the role of computational
+design in architecture and the one of multi-objective optimisation
+in urban planning, and how it could be interesting to link them in
+order to construct an hybrid approach. Then we describe a simplified
+algorithm that we apply to our concrete problem to propose automatic
+design, and that we finally couple with the Agent-Based Model for
+the existing District.
+
+\newpage{}
+\end{abstract}
+
+\section*{Introduction}
+
+
+\section{Overall approach of the problem}
+
+
+\subsection{From Artificial Art to Computational Design, applications in Architecture}
+
+The use of softwares and computers to produce Art, what we can call
+artificial art, has recently developped as a branch of practical applications
+of computational algorithms.
+
+\bigskip{}
+
+
+The designer \noun{Casey Reas} is one of the pioneers in that field,
+and is still very active today. He formulates his vision on the use
+of software in design in \cite{reas2010form+}, that can be considered
+as his manifest. As an interpretation of his ideas, we propose that
+imagination can be seen as a powerful method of exploration of the
+space of possibilities (which we paradoxaly present as the search
+space of the mind, but which is not rigourously defined in that case),
+so it appeared quickly as an application of artificial intelligence
+to simulate artifacts of the imagination, with its own advantages
+and issues. Typically, by using algorithms to create pieces of art
+or to design shapes, we just suggest new ideas to help the mind to
+create, but the process is still totally guided by the artist. The
+software is then only a new medium of expression and exploration of
+artistic possibilities.
+
+\noun{Reas} has explored figurative and abstract software painting,
+but also applications in design and architecture. One example of his
+work in architectural design can be seen in figure 1 .
+
+\begin{figure}
+
+
+\includegraphics[scale=0.5]{images/PaperD/casey-reas-the-eye-of-the-needle}\caption{Software as an expression medium (source : \cite{reas2010form+})}
+
+
+\end{figure}
+
+
+\bigskip{}
+
+
+The most recent researches in artificial art go towards use of artificial
+ants. In \cite{monmarche2008artificial}, the authors, that are specialists
+of solving complex optimisation problems using systems of artificial
+ants, present how these ``ants'' can be used to produce paintings
+or music. In a forthcoming work (presented at \cite{lectureAnts}),
+\noun{Monmarché} proposes some applications to the design of real
+forms in three dimensions, first for everyday objects, but also for
+sculptures. Following local rules (as for the 2D systems) and global
+constraints (it is one of the limitations of the method that still
+need to be overriden), the ants build objects and shapes in space.
+It could be easely applied to design of architectural shapes. An exemple
+of abstract art obtained by ants is shown on figure 2.
+
+\begin{figure}
+
+
+\includegraphics[scale=0.5]{images/PaperD/artAnts}\caption{Ant Painting (source : \cite{monmarche2008artificial})}
+
+
+\end{figure}
+
+
+\bigskip{}
+
+
+An other important aspect of mathematical methods applied to design
+is the use of shape grammars in computational design. \noun{T. Knight}
+has recently proposed a theorization for the use of these methods
+; in \cite{knight2003either}, which is more an essay than an aimed
+paper, he tries to characterize the ideas behind this type of art.
+He managed to make a link between a generative rule (the title of
+the paper, ``either, or -> and'') for computational algorithms with
+an implicit spirit of Bauhaus' artists like \noun{Kandinski} or \noun{Klee}.
+The rule is applied to many concepts of art philosophy in order to
+show that the Bauhaus artistic movement followed this abstract rule
+in many ways. Without going into details, one of the most interesting
+application (for our purpose) is the link between emergence and predictability,
+since it meets epistemological notions that are crucial in our work.
+At the heart of the study of complex system, emergence can be seen
+in a simplified way as the global properties of the system that come
+from the interaction of its local parts and that are by essence not
+predictable (it can be argued that this notion is really more subtle,
+as it is defined in different ways by \noun{Bedau} in \cite{bedau2002downward},
+but we will stay at this simple definition for our problem). Therefore,
+it is difficult to combine emergence and predictability, but still,
+these artists has sometimes managed that, and for \noun{Knight}, ``a
+good design requires both emergence and predictability''. That is
+a real issue when dealing with shape grammars : one can create incredible
+shapes, but they have to follow given constraints (so to show predictability)
+to be applied to architectural problems. A concrete application of
+this theory is proposed in \cite{knight2003computing}, where he shows
+examples of shape generation through the application of shape grammar
+(formally it is a grammar which rule can evolve according to user
+constraints, which rules apply to subsets of the plan). Further developments
+have been proposed recently, as the application on curved shapes in
+\cite{jowers2010construction}, concretely implemented through Bezier's
+curves calculations in \cite{jowers2011implementation}, allowing
+new designs including curves. The principles of shape grammars are
+shown in figure 3.
+
+
+\subsection{Evolutionary Algorithms for multi-objective Optimisation}
+
+On a greater scale, algorithms are also used to explore a space of
+possibilities, not for design purposes but to solve optimisation problems.
+Whereas simple objective optimisation can be easily solved by classic
+methods as the gradient descent as soon as some hypotheses on the
+function are met, the multi-objective optimisation problems present
+instrinsic difficulties to their resolution. In an analog way as combinatory
+problems on great cardinal sets, an exhaustive exploration of the
+definition set of the function is most of the times not possible with
+the current technical means, what imposes the need of performants
+exploration algorithms.
+
+
+\subsection{Mixing the two approaches : heterogeneous modeling and design through
+scale integration}
+
+We propose here an approach to the problem of multi-scale urban planning
+and design that could be considered as a mix of the two techniques
+described in the preceding sections. Indeed, it appears that they
+may be not so far, and that the gap would just be a question of scale.
+To go further, we can try to make some hypotheses that of course would
+need deeper exploration and that offer strong potential for future
+works : maybe is the edge between architecture and urban design not
+so well defined, and just a change of point of view or scale can break
+this edge. Some evidences, as the existence of an ``architectural
+urbanity'' that we have presented in , or the parallel that we have
+just done between computational methods at different scales, can reinforce
+that vision.
+
+\bigskip{}
+
+
+Therefore we will try here to explore the possibilities offered by
+that point of view by building a scale-integrated model for automatic
+design : in a really simple way (we don't try to elaborate complicated
+model, the aim is more a beginning of exploration of the fundamental
+ideas), we will couple a macro-scale evolutionnary algorithm for the
+design of landuses and transportation network with a local shape-generation
+algorithm for the buildings. The main idea that we use for scale coupling
+will be more indirect feedback through sub-systems interactions inside
+the global system, as it was proposed for multi-scale cellular automata
+coupling in \cite{MultiScaleCA10}, than direct feedback on the variable
+and parameters at both scale as it is done between macro differential
+equation and micro agent-based model for evolution of individuals
+in the work of Duboz on marine ecology in his thesis (\cite{Duboz:phd}).
+
+
+\section{Designing the new Kvillbäcken through evolutionary computation}
+
+
+\subsection{Preliminary work and overall assumptions}
+
+
+\subsection{Formal description of the algorithm}
+
+
+\subsubsection{Framework}
+
+The space is discretised in a set of patches $\mathcal{P}=\{p_{0},...,p_{n}\}$.
+We will distinguish the description of landuses at the macro level,
+that, given a number of distincts landuses $N$, can be translated
+through a function $L:\mathcal{P}\rightarrow\left[\left|1;N\right|\right]^{n}$,
+and the micro description of the shapes of the buildings, that would
+be for a configuration a family of continuous parts of surfaces in
+space $ $$(S_{i})_{1\leq i\leq K}$.
+
+
+\subsubsection{Optimisation objectives}
+
+
+\subsection{Exploration and application}
+
+
+\subsubsection{Patterns for landuse}
+
+
+\section{Coupling the model with the ABM for Langängen}
+
+
+\section*{Conclusion}
+
+\newpage{}
+
+\bibliographystyle{plain}
+\bibliography{/Users/Juste/Documents/ComplexSystems/Biblio/BibTeX/global}
+
+\end{document}
