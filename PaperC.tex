@@ -1,0 +1,400 @@
+
+\documentclass[english]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{luainputenc}
+\usepackage{amstext}
+\usepackage{amssymb}
+
+\makeatletter
+
+\newcommand{\noun}[1]{\textsc{#1}}
+
+\usepackage{background}
+\usepackage{multicol}
+\usepackage{bbm}
+
+%\usepackage{geometry}[0.8]
+
+
+%manage background
+\SetBgOpacity{0.3}
+\SetBgColor{black!20}
+
+\makeatother
+
+\usepackage{babel}
+\begin{document}
+
+\title{Application of agent-based modeling to the consolidation of a multi-criteria
+evaluation framework for building refurbishment}
+\maketitle
+\begin{abstract}
+Write at the end
+\end{abstract}
+
+\section*{Introduction}
+
+As we explained in \cite{RaimbaultReBoDescription0412}, the main
+part of our project on ReBo and L{\aa}ngängen case is the conception
+and implementation of an agent-based model at the scale of the district,
+which will take into account several aspects, from economic field
+to socio-cultural issues. That requires a heterogeneous model, which
+also need to be multi-scaled, since the concrete data we will use
+are themselves on different scales (macro scale for economic data
+such as unemployment, micro scale for the sociological data coming
+from individual questionnaires submitted recently to households of
+the district in the frame of a linked project). It is well known that,
+beyond epistemological issues that are also a great part of the problem
+according to \cite{michel2004formalisme}, the technical aspect of
+building such models is a huge obstacle, so an appropriate methodology,
+proposed in \cite{Duboz:phd}, is to construct the model step by step,
+beginning with the essential in a simple way. Even following this,
+it appears that the first step is a great challenge in itself.
+
+We applied this methodology in consequence ; it appeared that the
+first aspect that was necessary to have a credible and working model
+was the economic one, what brought us to build a simple economic model
+to which we could add the other aspects later.
+
+After a review of existing applications of Agent-based Modeling to
+urban questions, synthetized in \cite{ABMReview07,ABMPers12} , we
+saw that economic models of urban systems never were the purpose of
+pure economic research, since the economic field seems to have difficulties
+to accept the synergetics approach to their problems as it is argued
+in \cite{farmer2009economy}, but that there already exists promising
+economic agent-based models applied to geography. The SimPop model,
+developped for ten years by \noun{Sanders} \& \textit{al}. , presented
+in \cite{sanders1997simpop}, seemed to be the nearest of what we
+wanted to do, but at a greater scale, staying however adaptable at
+our smaller scale.
+
+
+\section{Background economic model}
+
+
+\subsection{Scales and data}
+
+The real data we dispose of are of two types : macro yearly data such
+as unemployment rates at the scale of Gothenburg city or its part
+containing L{\aa}ngängen (Kvillbäcken), obtained from local statistic
+office, and micro data at the scale of the building or the household,
+for example the rent values obtained from the companies renting the
+buildings (annual reports), or incomes of households and subjective
+considerations about the quality of life from the questionnaires recently
+submitted.
+
+That implies a double-scaled model : the evolution of agents and interactions
+between them will take place at the smallest level, which will be
+the flat and the household, with a small temporal scale as two weeks
+for example, whereas the district will also be considered from a global
+point of view to integrate the macro data, which will then be seen
+as exogeneous fixed time-series, on which the local behaviours will
+have no influence, but which the integration of local values will
+tend to reproduce in the better way. This hypothesis seems to be reasonable
+if the people work mainly outside the district, so a local perturbation
+of the economic configuration will have few impact on the unemployment
+(for example, if everybody works at the local supermarket and it burns,
+this hypothesis won't be true, whereas if the main part works outside,
+the fire won't have direct impact on unemployment - it will have of
+course on other aspect such as life quality).
+
+
+\subsection{Agents}
+
+For the basic model, the agents are households and flats.
+
+A household $h\in\mathcal{H}(t)$, with $\mathcal{H}(t)$ set of households
+at time $t$, is described by the number of people in it, the incomes
+status (with the convention that non-actives can't have income and
+unemployed have null income), the level of competence (approximately
+level of studies) of each active in it, the years of experience in
+the current job for each active, a consumption rate $c_{h}$ which
+describes approximately the propensity to consume and the occupied
+flat $f\in\mathcal{F}(t)$ ($\mathcal{F}(t)$ set of flats), so he
+have for all $t\geq0$,
+\[
+\mathcal{H}(t)\subset\left[\left|1;p_{max}\right|\right]\times\bigcup_{k\leq p_{max}}([0;I_{max}]\times[0;s_{max}]\times[0;e_{max}])^{k}\times[0;1]\times p_{\mathcal{F\rightarrow\mathbb{N}}}(\mathcal{F}(t))
+\]
+
+
+where $p_{max}$ is the maximal number of people in a household, $I_{max}$
+(resp. $s_{max}$, $e_{max}$) the maximal income in SEK (resp. level
+of studies in years, resp. experience in current work) for actives,
+and $p_{\mathcal{F}\rightarrow\mathbb{N}}$ a projection of $\mathcal{F}$
+on $\mathbb{N}$ given by an arbitrary numerotation.
+
+For the set of flats, we considere more simply the number of rooms
+and the rent, since the location is not of interest yet (the building
+fixes the rent per square meter, but it doesn't matter if we take
+the rent as given), and also the surface is in first approximation
+directly linearly linked with the number of rooms. That means that
+for all $t\geq0$, $\mathcal{F}(t)\subset\left[\left|1;R_{max}\right|\right]\times]0;r_{max}]$,
+with $R_{max}$ maximal number of rooms, $r_{max}$ maximal rent.
+
+
+\subsection{Evolution and interactions}
+
+The economic situation of households evolves according to the global
+economic data and the evolution of flat rents, whereas the evolution
+of flat rents is function of themselves and the mean economic value
+of the district.
+
+An iteration step of the model, corresponding to the small time step,
+is globally the following :
+\begin{itemize}
+\item Update work situation ; some people loose their jobs, other find one,
+in order to fit the current unemployment macro-value. Social help
+attribution and work experiences are also updated.
+\item Calculate economic balances for each houshold, taking into account
+all expenditures (rent, taxes, consumption).
+\item Households in great difficulty leave the district (seen as too expensive
+for them), whereas new inhabitants can come.
+\item Update rents for each building.
+\end{itemize}
+We describe the rules in details in the following.
+
+
+\subsubsection{Initialisation}
+
+The initialisation is done both at random and following external data.
+For example, the buildings follow their real GIS shapes. The exact
+way to initialize will not be described and can be seen in source
+code if needed. The important point is the one of the internal coherence
+of the implementation, so the variables of households are initialized
+following the update rules explained in the following, in order to
+have no transitionnary state before the ``real behaviour'' of the
+model (that means that the model does directly what it should do and
+that there is no bord-effects due to wrong initialisation, it is as
+we followed a situation that already evolved before).
+
+
+\subsubsection{Update work situations}
+
+
+\paragraph{Employment}
+
+For a household $h$, we can define by projection and counting the
+number $u_{h}$ of people unemployed and the number $a_{h}$ of actives
+in it, so the total number of unemployed is $U(t)=\sum_{h\in\mathcal{H}(t)}u_{h}$
+and the unemployment rate is $u(t)=\frac{\sum_{h\in\mathcal{H}(t)}u_{h}}{\sum_{h\in\mathcal{H}(t)}a_{h}}$.
+
+The global tendance of $u$ should verify $<u(t_{n})>=u_{n}$, where
+$u_{n}$ is the fixed external time-serie. If $N_{u}(t_{n+1})$ is
+the number of people loosing their jobs and $N_{e}(t_{n+1})$ the
+number of people finding a job, we have approximatively $N_{u}(t_{n+1})-N_{e}(t_{n+1})=A(t_{n})\cdot(u(t_{n+1})-u(t_{n}))$
+(taking the number of active $A(t)$ as constant at this time scale,
+that suppose that emigration and immigration rates are relatively
+small). New employed are directly linked to a global economic tendancy,
+that can be also represented by a time serie $J_{n}$ (which represents
+the quantity of job opportunities), so it's possible to write $N_{e}(t_{n+1})\sim\mathcal{N}(J_{n+1},\sigma_{J})$
+(the variance is a fixed parameter), so we can then calculate the
+number of people loosing their jobs also as a random function ($\sigma_{u}$
+parameter) :
+
+\[
+N_{u}(t_{n+1})\sim\mathcal{N}(\mathcal{N}(J_{n+1},\sigma_{J})+A(t_{n})\cdot(u_{n+1}-u(t_{n})),\sigma_{u})
+\]
+
+
+That satisfies our constraint on the mean, we can see it by taking
+the mean on the above formula.%
+\footnote{Note that to be correct, we should note $N_{e}(t_{n+1})\sim_{law}\mathcal{N}(J_{n+1},\sigma_{J})$
+and $N_{u}(t_{n+1})\sim_{\textrm{cond. to }N_{e}=n_{e}}\mathcal{N}(n_{e}+A(t_{n})\cdot(u_{n+1}-u(t_{n})),\sigma_{u})$,
+and the calculation of mean is done conditionally : $\mathbb{E}(N_{u}(t_{n+1}))=\mathbb{E}(\mathbb{E}(N_{u}(t_{n+1})|N_{e}))=\mathbb{E}(N_{e}+A(t_{n})\cdot(u_{n+1}-u(t_{n})))=J_{n+1}+A(t_{n})\cdot(u_{n+1}-u(t_{n}))$,
+what gives well $<u(t_{n+1})>=u_{n+1}$. %
+}
+
+A new employed person fixes his income such that $I_{i}(t_{n+1})=max(I_{min},\mathcal{N}(m_{I}-\sigma_{I}+k_{I}\cdot s_{i}\cdot\sigma_{I},\sigma_{I}))$
+where $I_{min}$ is a minimal income, $m_{I}$ a mean value, $\sigma_{I}$
+a standard deviation, $k_{I}$ a parameter representing the importance
+of studies in income attribution (if $k_{I}=1$, mean income will
+correspond to 1 year of studies. Such a relation is of course reducing
+but we will take that in first approximation).
+
+
+\paragraph{Experience}
+
+After that, for each household $h$, if $(e_{i}(t))$ are the experiences
+and $(I_{i}(t))$ the incomes, $\tau$ the value of the time step,
+we set $e_{i}(t_{n+1})= \mathbbm{1}_{I_{i}(t_{n+1})=0}\cdot e_{i}(t_{n})+ \tau$
+and if the income has not already be defined through a new employment,
+$I_{i}(t_{n+1}) = \mathbbm{1}_{e_{i}(t_{n+1}) \textrm{ mod } \tau_{prom} = 0}\cdot (I_(t_{n})+I_{step})$
+where $\tau_{prom}$ is the duration to be promoted (necessary multiple
+of $\tau$) and $I_{step}$ the corresponding income variation.
+
+
+\paragraph{Social Help}
+
+At each step, a given subset $\mathcal{S}(t)$ of $\mathcal{H}$ can
+benefit of social help. We define the primary reduced balance by $b_{r}(h)=(\sum I_{i}-r(f(h)))/p(h)$,
+with $f$ the occupied flat, $r$ its rent function and $p$ the people
+number. Following a simple treshold criterium, the households in $\mathcal{S}$
+are the $S_{max}$ elements in $\{h\in\mathcal{H}|b_{r}(h)<t_{S}\}$
+with the lowest $b_{r}$.
+
+
+\subsubsection{Economic balances}
+
+Then the global economic balance is calculated for each household.
+It is defined, taking $b_{p}(h)=(1-t-c_{h}\cdot p_{h})\sum I_{i}-r(f(h))$,
+by $b(h)=max(b_{p}(h),\mathbbm{1}_{h\in \mathcal{S}} \cdot min(I_{S}^{max},b_{p}(h)+I_{S}))$,
+with $t$ global taxe rate (we take the taxe linear in a first approximation
+; a tresholded function could be more appropriate), $c_{h}$ the propension
+to consume (per person) of the household, $p_{h}$ the number of people,
+$I_{S}$ the max amount of social help and $I_{S}^{max}$ the maximal
+value of balance after getting social help
+
+
+\subsubsection{Population movements}
+
+According to the value of their economic balance, people can then
+leave the district if it has become too expensive for them. That is
+modeled simply by a treshold rule again, households with $b(h)<t_{d}$
+are deleted from $\mathcal{H}$ at this step.
+
+Then can immigrate new inhabitants, of mean income the current mean
+income, and with other parameters chosen following the current initialisation
+rule (can be at random or depending of $u_{n}$ for unemployment for
+example). Their number is limited by the number of free flats $Card(\{f\in\mathcal{F}|\forall h\in\mathcal{H},f(h)\neq f\})$
+and a maximal number $N_{n}$.
+
+
+\subsubsection{Update rents values}
+
+It seems logical to propose that rents are updated according to the
+previous values and mean of rents (to have an auto-regulation) and
+to the global ``economic value'' of the district, which we can see
+as a direct function of incomes. Furthermore, a strong legal disposition
+particular to Sweden fixes a treshold that rents can not exceed to
+regulate the rents. To follow these constraints, we propose a rent
+update for flat $i$ of the form
+
+\[
+\begin{array}{c}
+r_{i}(t_{n+1})\sim_{law}\mathcal{N}(min(r_{max}\cdot n_{r}(i)\cdot s_{0},(1+\frac{<b(h)>_{\mathcal{H}}(t)-b_{ref}}{b_{norm}})\cdot r_{i}(t_{n})\\
++K_{r}\cdot(<r_{i}>_{\mathcal{F}}(t)-r_{i}(t_{n}))),\sigma_{r})
+\end{array}
+\]
+
+
+where $\sigma_{r}$ is the variance parameter, $r_{max}$ the maximal
+rent per square meter fixed by the law, $n_{r}(i)$ the bumber of
+rooms in flat, $s_{0}$ the mean surface of a room (the random fluctuations
+are translated through the randomness of rent), $b_{ref}$ and $b_{norm}$
+two parameters quantifying the influence of economic status on rents,
+$K_{r}$ the auto-regulation coefficient.
+
+The term of auto-regulation tends to create a uniform distribution
+of rents on long times, because it brings all rents to the mean value,
+so we will for long time executions set the parameter $K_{r}$ to
+zero.
+
+
+\subsection{List of parameters}
+
+The right boundaries of descriptive variables for households and flats
+are parameters in themselves, but since we need to take them arbitrary
+big to always stay in the definition domain because they don't appear
+in formula, they have no influence on the model behaviour, so we don't
+consider them.
+
+Follows the list of essential parameters.
+\begin{itemize}
+\item $\tau$ the time step corresponding to the real value of one iteration
+\item $J_{n}$, $u_{n}$ the fixed time-series corresponding more to data
+than to parameters, and their corresponding sample time step $\tau_{ext}$
+\item $I_{min}$ the minimal income, $m_{I}$ the mean income (that we could
+also take as a time serie later, to represent for example the external
+consequence of inflation on incomes), $\sigma_{I}$ the corresponding
+deviation, $k_{I}$ the coefficient determining the importance of
+competence level
+\item $\tau_{prom}$ the experience time to get promoted, $I_{step}$ the
+corresponding income increasing
+\item $S_{max}$ the maximal number of households that can get simulteanously
+social help, $t_{S}$ the social help attribution treshold, $I_{S}$
+the maximal amount of money a household can get from social help,
+$I_{S}^{max}$ the maximal final balance for people getting social
+help
+\item $r_{max}$, $s_{0}$, $b_{ref}$, $b_{norm}$, $K_{r}$ the rent parameters
+\item $t_{d}$ die treshold and $N_{n}$ maximal number of immigrants per
+step
+\end{itemize}
+
+\section{Integration of multiple aspects}
+
+The next step of the model construction process was to consider the
+first layer as validated, and to add new layers of agents and variables
+in order to create a heterogeneous integrated model. The validation
+step was made through model exploration and sensitivity analysis,
+that we describe further in the results section.
+
+
+\subsection*{Choice of extending aspects}
+
+The main objective was to diversify the model in the direction of
+socio-cultural aspect, since the purpose of ReBo is to hightlight
+the importance of these multiple aspects in the refurbishment process.
+
+
+\subsection*{Description of the integration}
+
+
+\section{Concrete results : refurbishment simulation}
+
+
+\subsection{Implementation and calibration}
+
+
+\subsubsection{Implementation issues}
+
+The model was implemented with the NetLogo software (\cite{NetLogo}),
+which is designed for agent-based modeling.
+
+
+\subsubsection{Calibration process}
+
+The aim of the model was to make predictions based on real data, so
+after having reduced the number of unknown (mostly because abstracts)
+parameters in the model, we designed a particular calibration process,
+in order to automatically find one of the best set of values for the
+parameters that makes the model ``fit the reality'' (according to
+some objective functions).
+
+The technical details of the elaboration process (which includes exploration
+and experiments) are developped in Appendice , and we will just sum
+up here globally the method used.
+
+
+\subsection{Case study : district L{\aa}ngängen}
+
+
+\subsubsection{Data collection and integration}
+
+
+\subsection{Simulating possible refurbishment scenarii}
+
+
+\section{Discussion and perspectives}
+
+
+\subsection*{Obtained results}
+
+
+\subsection*{Limitations of agent-based modeling}
+
+
+\subsection*{Consolidation of the original framework?}
+
+
+\subsection*{Perspectives of developments}
+
+Next steps in the project can be directed towards the application
+to other concrete case, that could 
+
+
+\section*{Conclusion}
+
+\bibliographystyle{plain}
+\bibliography{/Users/Juste/Documents/ComplexSystems/Biblio/BibTeX/global}
+
+\end{document}

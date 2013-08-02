@@ -1,0 +1,142 @@
+
+\documentclass[english]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{luainputenc}
+\usepackage{amstext}
+\usepackage{graphicx}
+
+\makeatletter
+
+\newcommand{\lyxdot}{.}
+
+
+\usepackage{background}
+
+\SetBgOpacity{0.6}
+\SetBgColor{black!20}
+
+\@ifundefined{showcaptionsetup}{}{%
+ \PassOptionsToPackage{caption=false}{subfig}}
+\usepackage{subfig}
+\makeatother
+
+\usepackage{babel}
+\begin{document}
+
+\title{Basic model calibration}
+
+\maketitle
+
+\subsection*{Experience plan}
+
+The experience plan for model calibration will be a regular grid within
+an hypercube in the parameter space. Since we proceed first to a single
+objective calibration, for which the objective function is the mean
+square error between the simulated values of a given time-serie and
+their real values according to the data we dispose, and since the
+theorical description of the model is not easily projectable in a
+space on which cross-mutations dicted by evolutionnary algorithms
+are possible, we choose to proceed to a brutal calibration through
+an exploration of the hypercube.
+
+
+\paragraph*{Exploration domain}
+
+If we need to calibrate the model on $K$ parameters $(p_{1},\textrm{ ... },p_{K})\in[p_{1}^{min},p_{1}^{max}]\times...\times[p_{K}^{min},p_{K}^{max}]$
+with corresponding precision steps $(p_{1}^{step},\textrm{ ... },p_{K}^{step})$,
+a minimal replication number $\tau_{K}$ for which the output value
+are considered as acceptable, that depends on parameters and on given
+trust intervals on the output values (empirically we will fix that
+number according to first experienced outputs, since the sensitivity
+of output variances regarding to the parameters seems to be relatively
+small), and a maximal execution time for one replication $T_{max}$
+(also empirically fixed by experiences), then the necessary calculation
+time will be bounded by $\left\lfloor \frac{p_{1}^{max}-p_{1}^{min}}{p_{1}^{step}}\right\rfloor \times...\times\left\lfloor \frac{p_{K}^{max}-p_{K}^{min}}{p_{K}^{step}}\right\rfloor \cdot\tau_{K}\cdot T_{max}$
+which is, with $M=max_{1\leq i\leq K}(p_{i}^{max}-p_{i}^{min})$,
+unfortunately a $O(M^{K})$ : the brutal exploration time increase
+exponentially on the number of parameters, which leads us to try to
+fix the most possible number of parameters value by evaluating a real
+world approximation, what is possible only for parameters that are
+precise proxies.
+
+
+\paragraph*{Gradient descent optimisation}
+
+After having minimized the size of the exploration domain, we will
+proceed to the optimization of the mean-square error on that remaining
+domain. If the function is quite regular, a direct application of
+a gradient-descent method on the multi-variable function should be
+a huge gain of time and lead to a quick model calibration. However,
+if there exists chaotic behaviours and a lot of local minima, the
+optimization can in worst case be as costly as the hole exploration
+of the grid within the hypercube. In that case, we will not be able
+to calibrate on more than 3 or 4 parameters on reasonable calculation
+times (let say one day). Furthermore, it is not yet possible to say
+if the gradient method will efficiently be applicable, because we
+have no idea of the response surface before doing some tests. The
+first empirical results will guide the following calibration process.
+
+
+\subsection*{Concrete calibration}
+
+
+\subsubsection*{Exploration of parameters space with low number of parameters}
+
+We were able to fix reasonably all parameters but 3 which were intrinsic
+coefficient in the discrete differential equation that couldn't be
+approximate by their real world values since they didn't mean anything
+concrete. For these, we explored totally a regular grid of dimension
+3, in order to have an idea of the response surface of the objective
+function. Staying in single objective calibration, the function to
+minimize was the mean square error on an output time-serie of the
+model (concretly the time-serie representing the mean rent). We show
+in figure 1 representations of the response surface along vertical
+and horizontal planes, for the 3 possible combinations of 2 parameters.
+
+\begin{figure}
+\subfloat[Along plane income-mean=cste]{\includegraphics[scale=0.18,bb = 0 0 200 100, draft, type=eps]{/Users/Juste/Documents/Complex Systems/SustainableDistrict/Results/ABMLangangen/BasicEconomic/calibration/CalibMeanSquareRents_XBrefYBNorm.jpg}
+
+}\subfloat[Along plane bnorm=cste]{\includegraphics[scale=0.18,bb = 0 0 200 100, draft, type=eps]{/Users/Juste/Documents/Complex Systems/SustainableDistrict/Results/ABMLangangen/BasicEconomic/calibration/CalibMeanSquareRents_XBrefYMIncome.jpg}
+
+}\subfloat[Along plane bref=cste]{\includegraphics[scale=0.18,bb = 0 0 200 100, draft, type=eps]{/Users/Juste/Documents/Complex Systems/SustainableDistrict/Results/ABMLangangen/BasicEconomic/calibration/CalibMeanSquareRents_XMeanIncomeYBNorm_Bref11000.jpg}
+
+}\caption{Responses surfaces along given planes}
+
+
+\end{figure}
+
+
+The quite regular shape of the reponse surfaces, for all possibilities,
+suggests that the use of a gradient descent could be helpful to converge
+towards a possible global minimum.
+
+
+\subsubsection*{Tests for a multi-objective calibration}
+
+However, it appeared in first tests of the model that the single objective
+calibration could led to bad result regarding the reproduction of
+the real situation : the model was then quite precise to reproduce
+the rent evolution, but the mean income of actives was in the supposed
+best situation showing unrealistic values. That's why a multi-objective
+calibration on several outputs of the model (at least two) was necessary.
+
+In that case, the simple but expensive method is the total exploration
+of the grid as we did for the initial tests. The calculation time
+(1 day) makes it not possible to use in a simple run of the model,
+what we would like to have (several cases of real values for the other
+parameters may be tested, so we want to have a immediate calibration
+before running the model, according to the values of the pther parameters).
+Furthermore, the use of evolutionnary algorithm is also not possible
+as we explained in introduction.
+
+The only solution left is the use of an aggregated error function
+and a gradient descent on that function. Fortunately, the magnitude
+of the two main errors functions were quite different, as the tests
+have shown it. We can see on figure 2
+
+
+\subsubsection*{Method finally adopted}
+
+
+\subsubsection*{Important points and issues}
+\end{document}

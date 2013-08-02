@@ -1,0 +1,256 @@
+
+\documentclass[english]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{luainputenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{esint}
+
+\makeatletter
+
+\newcommand{\noun}[1]{\textsc{#1}}
+
+\usepackage{bbm}
+
+\usepackage{background}
+
+\usepackage{geometry}[0.5]
+
+
+%manage background
+\SetBgOpacity{0.3}
+\SetBgColor{black!20}
+
+\makeatother
+
+\usepackage{babel}
+\begin{document}
+
+\title{Basic model for daylight exposition calculation with objective of
+urban contexts comparison}
+
+
+\author{\noun{Juste Raimbault}\\
+Chalmers Tekniska Högskola\\
+Department of Architecture}
+\maketitle
+\begin{abstract}
+In the frame of a research of objective indicators of different types
+in order to compare qualities of given urban contexts, it appeared
+that the direct exposition of building windows to daylight (sunbeams)
+was quite important for the life quality, since we wanted to apply
+our model to districts without particular architectural programs,
+current residentials districts. We propose therefore here a simplified
+but directly and quickly implementable model for such comparisons,
+the aim being more to have an approximate idea if great differences
+exists than very precise calculations, because it will be used in
+a more general context.
+\end{abstract}
+
+\section*{Introduction}
+
+The importance of daylight on the perception of architectural objects,
+so therefore of their quality, but also on direct life quality (health
+issues, natural need of daylight) are described in \cite{phillips19232004},
+and that's why we would like to consider it as an evaluation criteria
+for urban districts. We place ourselves in the framework of investigative
+modeling that is today strongly developing in architecture (see \cite{ArchMorph})
+: we want to use objective calculations and investigations on the
+studied objects.
+
+If we consider buildings in themselves, it is possible to estimate
+subjectively and objectively the performance of the architecture regarding
+daylight treatment, but it is an evaluation of the individual architecture.
+More globally, we would like to evaluate the performance of an urban
+configuration in that context, that means not if the buildings see
+daylight (they always see it of course), but how the sunbeams come
+on building facades and the effect of shadows consequences of the
+district configuration. A simplified example is if the designer creates
+line buildings oriented North-South, it will be significantly more
+efficient to get sunbeams on facades than if it was oriented East-West.
+Further, there are also the shadows effects between buildings and
+natural elements of the site.
+
+In \cite{miguet2002daylight}, the authors study an elaborated model
+of daylight calculations, and we have based ourselves on the same
+ideas for sunbeam calculations. In the following, we describe the
+theorical framework of the model and briefly give clues for quick
+concrete implementation.
+
+
+\section*{Model Description}
+
+
+\subsection*{Input Data}
+
+
+\subsubsection*{Sun course}
+
+We want to apply our model to districts located in different places,
+but also integrate on short and long time periods, so the input description
+of the sun course will depend of the location $L$ (location on earth,
+for which only latitude will be influent) and of the time in the year
+$T$ (in days).
+
+The space is parametrized in spherical coordinates (adapted to the
+calculations), a point in the sky is defined by $(r,\theta,\varphi)$.
+It is natural to make the assumption that the sun is located at $r=+\infty$
+and that its relative position to every point in the district is the
+same, given by the angles $(\theta,\varphi)$. (it stays true as long
+as the studied zone remains ``small'', although we didn't quantify
+this size, it appears as normal that it is the case for a city district).
+
+The course of the sun will by consequent be represented by a family
+of functions
+\[
+(\mathcal{S}_{L,T})_{L,T}=(t\mapsto(\theta_{L,T}(t),\varphi_{L,T}(t)))_{L,T}
+\]
+
+
+that we will in input roughly approximate by regulars samplings (like
+every hour for example) $\mathcal{S}_{L,T}^{(d)}=((\theta_{i,L,T},\varphi_{i,L,T}))_{1\leq i\leq K}$
+($K=12$ for 2 hour sampling for example).
+
+
+\subsubsection*{District configuration}
+
+We need to know the configuration of the buildings, but also their
+elevation (shadow effects). A simple way to represent it is just to
+give the height function of the position in the district $h(x,y)$,
+with $(x,y)\in P\subset\mathbb{R}^{2}$ coordinate within district
+bounds relative to an arbitrary origin. We can even by that mean represent
+hills or trees (roughly simplified of course). Concretely, the input
+data is spatially discretised, and can be for example a GIS raster
+data.
+
+
+\subsubsection*{Set of objective points (windows)}
+
+An other part of the architecture that is needed is the positions
+of windows in buildings, that we will consider as a set of $N$ ``objective
+points'' : $((x_{i}^{0},y_{i}^{0},z_{i}^{0}))_{1\leq i\leq N}$,
+supposed to be compatible with the descriptive function $h$ (the
+windows need to be on the wall, so on vertical discontinuities of
+$h$). Of course the real windows are more than points but we will
+assume the simplification that the windows is enlightened if its center
+is (which is the objective point), what shouldn't be a problem because
+of the small size of a window compared to a all building.
+
+
+\subsection*{Calculation of indicators}
+
+Given this simple description of the district configuration, we are
+able to calculate indicators of the quantity of direct daylight exposition.
+
+With $\vec{u}_{r}(\theta,\varphi)$ the radial unit vector corresponding
+to angles $(\theta,\varphi)$, the approximation that sunbeams come
+parallel on all points of our study zone gives directly the equivalence
+that $M(x,y,z)$ \textit{is enlightened at time t of day T in L }$\iff\theta_{L,T}(t)>0\textrm{ and }M+\mathbb{R}_{+}\cdot\vec{u}_{r}(\theta_{L,T}(t),\varphi_{L,T}(t))\cap\bigcup_{(x,y)\in P}[(x,y,0)(x,y,h(x,y))]=\emptyset$.
+
+Concretely, the test shouldn't be done on all $P$ but on the projection
+of the line for better performance, and the intersection tests can
+be done by discretising the segments. It is in fact necessary, since
+in 3 dimensions it will be easy to have very close but not intersecting
+lines, which intersects in reality, that's why the discretisation
+is necessary (if we test among the projection, it will be on its discretisation,
+and the given vertical segments will never exactly intersect the line
+since we have float values).
+
+Then it is possible to compute the ``enlightening'' functions for
+each point :
+\[
+s_{i}(L,T):t\mapsto\begin{cases}
+\begin{array}{cc}
+1 & \textrm{ if }(x_{i}^{0},y_{i}^{0},z_{i}^{0})\textrm{ is enlightened at time }t\\
+0 & otherwise
+\end{array}\end{cases}
+\]
+
+
+so their integration on the day gives the enlightening time $\tau_{i}(L,T)=\intop_{t=0}^{24}s_{i}(L,T)[t]dt$,
+measure that we need to normalise if we want to be coherent (compare
+absolute enlightening times would have no sense because it depends
+directly of $T$ and $L$). In that way we define the normalized enlightening
+time $\tilde{\tau_{i}}(L,T)$ by \[\tilde{\tau_{i}}(L,T)=\frac{\tau_{i}(L,T)}{\intop_{t=0}^{24}\mathbbm{1}_{\theta_{L,T}(t)<\frac{\pi}{2}}dt}\]
+
+Then we integrate on the all district by taking the normalized p-norm
+of the vector of these values : with $ $$p_{d}\in[1;+\infty[$, we
+define $\tilde{\tau}(L,T)=\left\Vert (\tilde{\tau_{i}(L,T)})_{1\leq i\leq N}\right\Vert _{p_{d}}$
+(with $p_{d}=1$ it gives the mean and $p_{d}=+\infty$ the max).
+
+To conclude, we just need to consider it on a hole year. With $p_{Y}\in[1;+\infty[$,
+the indicator that we will use to approximate and compare the global
+daylight expositions is
+\[
+S(L)=\left\Vert (\tilde{\tau}(L,d))_{1\leq d\leq365}\right\Vert _{p_{Y}}
+\]
+
+
+Since that indicator is normalized by the relative day lengths and
+integrated on all district and all year, it should be a good candidate
+to represent the ``performance'' of the urban district regarding
+the daylight exposition, independently of its location : that tells
+if the buildings are agenced to profit at maximum of the light that
+is given.
+
+Note that we normalized by an approximation of the length of the day
+and not by the global enlightening time, because first it would be
+quite complicated to have it as a data, and then it would make not
+real sense because the builder can not change anything to that through
+design, the geometric configuration of the district has only interaction
+with the geometry of the sun course, not with the fact that it is
+hidden or not.
+
+
+\section*{Implementation}
+
+We are currently doing test to implement that model quickly and integrate
+it in a more global project. Follows important aspects related to
+the implementation.
+
+
+\paragraph*{Software}
+
+Because we place ourselves in a project which main part consists of
+Agent-Based Modeling, we choose the plateform NetLogo (\cite{NetLogo})
+for compatibility reasons. In fact it appears to be particularly ergonomic
+for that case, because of the efficient GIS extension, and the system
+of the world divised in patches that are already the spatial discretisation
+we wanted.
+
+
+\paragraph*{Input data}
+
+Concerning the sun course, as explained before we can take samples
+of the position each hour, and the same on the year (each two weeks
+for example), so the input can be a simple list of couples.
+
+For the height configuration, we can use GIS raster data as input.
+Data can be available from precise Lidar data, a mean to get precise
+mappings that have become more popular and efficient quite recently
+(see \cite{2004PhDT.......212H} for example), and in some countries
+extended coverage has been proceded, at least in great cities (for
+Sweden we have available data). These height data are very precise
+(50cm) and are particularly adapted to our problem.
+
+Finally, for the windows position, we could input the exact configuration,
+but that would require field survey. Instead, we can simplify by approximating
+a given number of windows per square meter on facades (will depend
+on architecture of course, but we can consider a mean on the district),
+then extract hypothetic position from facades shapes (what are themselves
+calculated by searching the vertical discontinuities of the height
+function), so we don't need more input by doing that way.
+
+
+\section*{Conclusion}
+
+Although a lot of approximations are done in the model, the approximated
+output values can be used for comparison purposes, and that gives
+us an objective criteria to evaluate performance of a district regarding
+enlightening, that we can integrate in a global comparison of different
+districts among criteria of various types.
+
+\bibliographystyle{plain}
+\bibliography{\string"/Users/Juste/Documents/Complex Systems/Biblio/BibTeX/global\string",daylight}
+
+\end{document}

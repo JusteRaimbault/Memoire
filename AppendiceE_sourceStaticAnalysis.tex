@@ -1,0 +1,157 @@
+
+\documentclass[english]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{luainputenc}
+\usepackage{listings}
+\usepackage{babel}
+\begin{document}
+
+\title{Appendice : source code for static district analysis model}
+
+\maketitle
+
+\section*{Main file}
+
+\begin{lstlisting}
+extensions [gis nw]
+
+__includes [
+  "[...]/LinkUtilities.nls"
+  "[...]/ListUtilities.nls"
+  "[...]/NetworkUtilities.nls"
+  "[...]/EuclidianDistancesUtilities.nls"
+  "[...]/FileUtilities.nls"
+  "daylight.nls"
+  "indicatorsVars.nls"
+]
+
+globals [
+  ;;scale factor 
+  ;;value in meters of 1 step in NL world
+  scale-factor
+
+  ;;network
+  paths-layer-data
+  buildings-layer-data
+  tram-layer-data
+
+  remaining-links
+  remaining-vertices
+
+  ;;speed
+  target-station
+
+  ;;landuse
+  landuse-diversity
+  patches-count
+
+  ;;daylight
+  ;;list of successives theta angles
+  theta
+  ;;list of successives phi angles
+  phi
+  ;;time interval to change angle (first line of txt file)
+  angle-time-interval 
+  sunlight-index
+]
+
+
+breed [vertices vertex]
+
+breed [abstract-gis-paths abstract-gis-path]
+
+abstract-gis-paths-own [
+ gis-feature
+ vertices-list
+]
+
+breed [stations station]
+
+breed [buildings building]
+
+undirected-link-breed [paths path]
+undirected-link-breed [rails rail]
+
+paths-own[path-length]
+rails-own [rail-length]
+
+vertices-own[  
+ d 
+ ;;simplified as mean distance to other vertices
+ spatial-integration
+]
+
+buildings-own[
+ gis-shape
+ distance-to-nearest-station
+ nearest-station
+ transportation-time
+ transportation-speed
+]
+
+patches-own [
+  ;;daylight
+  height
+  neighb
+  
+  ;;diversity
+  use
+      ]
+
+to load-and-draw-data
+  ca
+  resize-world 0 400 0 300
+  set-patch-size 2
+  set scale-factor real-world-width / world-width
+  ask patches [set height 0]
+  set paths-layer-data gis:load-dataset path-data
+  set buildings-layer-data gis:load-dataset building-data
+  set tram-layer-data gis:load-dataset tram-data
+  gis:set-world-envelope gis:envelope-union-of
+     gis:envelope-union-of (gis:envelope-of paths-layer-data)
+    (gis:envelope-of buildings-layer-data) (gis:envelope-of tram-layer-data)
+  gis:set-drawing-color brown
+  gis:draw paths-layer-data 2 
+
+  ;;create abstract buildings
+  foreach gis:feature-list-of buildings-layer-data [
+    create-buildings 1 [
+      let pos gis:location-of gis:centroid-of ?
+	  set gis-shape ?
+      set distance-to-nearest-station 0 set hidden? true
+      setxy first pos first but-first pos
+    ]
+  ] 
+end
+
+to import-tram
+ ask stations [die] ask rails [die]
+  let current-station nobody
+  foreach gis:feature-list-of tram-layer-data [
+    foreach gis:vertex-lists-of ? [
+      foreach ? [
+      let loc gis:location-of ? 
+      create-stations 1 [
+        setxy first loc first but-first loc
+		set shape "circle"
+		set color red set size 1
+        ifelse current-station != nobody [
+		create-rail-with current-station [
+		  set thickness 0.4 set color red]
+		][set target-station self]
+        set current-station self
+      ]
+    ]
+  ] 
+ ]
+end
+\end{lstlisting}
+
+
+
+\section*{Indicators calculation}
+
+\begin{lstlisting}
+\end{lstlisting}
+
+\end{document}
