@@ -1,4 +1,3 @@
-
 \documentclass[english]{article}
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{luainputenc}
@@ -291,7 +290,7 @@ a year.
 Given a latitude $L$ and a time in the year $T$, we suppose that
 the positions of the sun are known (during a day, defined by its spherical coordinates)
 : $(\mathcal{S}_{L,T})_{L,T}=(t\in[0;24]\mapsto(\theta_{L,T}(t),\varphi_{L,T}(t)))_{L,T}$, 
-s well as the height function of the district $h(x,y)$ on a subset of $\mathbb{R}^{2}$
+as well as the height function of the district $h(x,y)$ on a subset of $\mathbb{R}^{2}$
 (we assume the projection has already been done) and the positions
 of all windows $((x_{i}^{0},y_{i}^{0},z_{i}^{0}))_{1\leq i\leq N}$.
 We can calculate for each window with these data the binaries enlightning
@@ -299,20 +298,20 @@ functions (not detailed here) $s_{i}(L,T):[0;24]\rightarrow\{0;1\}$.
 Finally, the successives aggregations as explained before give our
 index $S(L)$, with $p_{s},p_{Y}\in[1;+\infty]$ parameters for the
 norms : \[S(L)=\left\Vert \left(\left\Vert \left(\frac{\intop_{t=0}^{24}s_{i}(L,d)[t]dt}{\intop_{t=0}^{24}\mathbbm{1}_{\theta_{L,T}(t)<\frac{\pi}{2}}dt}\right)_{1\leq i\leq N}\right\Vert _{p_{s}}\right)_{1\leq d\leq365}\right\Vert _{p_{Y}} \]The
-point particularly interesting in this indicator is that it exprimes
-the capacity of district to use the given daylight, thanks to the
+point particularly relevant in this indicator is that it expresses
+the capacity of a district to use the given daylight, thanks to the
 normalization by the lighting time in a day ; in winter in Sweden,
 enlighting times are short, but that does not mean that the district
 is not designed in an efficient way. This point raises the question
-of the validity field of the indicator : on latitudes close to huge
+of the validity field of the indicator : as the latitudes get closer to huge (?)
 North or South (just Kiruna in north Sweden could already pose a problem),
-it will become very sensitive to configuration because of the small
-values of enlightning time and won't have really a sense (it should
+the indicator will become very sensitive to the local configuration because of the small
+values of enlightning time and might lose its meaning (it should
 be possible to build masterplans leading to strong bifurcation phenomena)
-- exploration of validity domain through linking to felt impressions
-and cultural expectations, and maybe diversification of its expression
+Investigation on validity domain through linking to perceived impressions
+and cultural expectations and possibly diversification of their expression
 depending on human parameters, could be the object of further study.
-Still, we will use that here as an approximative indicator.
+Still, we will use that this indicator here as an approximative indicator.
 
 \bigskip{}
 
@@ -330,12 +329,12 @@ calculation.
 
 \subsubsection{Public transportation performances}
 
-The last criteria we chose was the performances of the public transportation
-network ; it is in an other field that the three we already have and
+The last criteria we choose is the performances of the public transportation
+network ; it is in another field than the three we already have and
 appears also as crucial in the life of the city. Without getting into
 the debate of the structuring aspect of the transportation network
 or of its interactions with the other aspects of urban systems, we
-will admit the reasonable hypothesis that the relation between the
+will accept the reasonable possibility that the relationship between the
 quality of the transportation network (according to various criteria
 as robustness, connectivity, speed, etc) and the ``quality'' of
 the district (which is of course not really defined) is an increasing
@@ -345,10 +344,10 @@ function.
 
 
 The intermediate scale for which we give indicators is not appropriated
-for complex network analysis as centrality measures (see \cite{crucitti2006centrality}
+for complex network analysis such as centrality measures (see \cite{crucitti2006centrality}
 on physical street network), clustering analysis (see \cite{jiang2004topological}
 on named street network), or real robustness evaluation (see \cite{RePEc:eee:transa:v:44:y:2010:i:5:p:323-336}
-on large scale road network weighted by real traffic), but the promising
+on large scale road network weighted by real traffic). However the promising
 recent developments in complex networks theory (in particular by application
 of results on complex networks in physics to the study social networks)
 should invite us to find a way to consider networks at this smaller
@@ -358,7 +357,7 @@ future work.
 \bigskip{}
 
 
-For our district evaluation, we will stay to very simple but essential
+For our district evaluation, we will use two very simple but essential
 indexes : transportation time and network relative speed. Formally,
 we suppose having the abstract representation of pedestrian network
 as an euclidian graph $(V_{p},E_{p})$ with $V$ finite part of the
@@ -373,7 +372,7 @@ a ``target station'' $T$ in transportation network which is concretly
 the town center. We note $d_{v,v'}$ the length in networks between
 vertices $v$ and $v'$. With mean speeds pedestrian speeds $v_{p}$
 and transportation speed $v_{t}$ (we neglige waiting time, which
-can be integrated in speed if needed), we define our first indicator
+can be integrated in speed if needed), we define the first indicator
 for the network (homogeneous to a time), with $p_{t}\in[1;+\infty[$
 :
 \[
@@ -382,14 +381,14 @@ for the network (homogeneous to a time), with $p_{t}\in[1;+\infty[$
 
 
 The other network performance we propose is the relative ``speed'',
-i.e. the quantification of how the network is able to go directly
-to destination. It appears as an essential metric in real network
+i.e. the quantification of how the network is able to convey directly
+the passengers to its destination. It appears to be an essential metric in real network
 studies as it is explained in \cite{banos2012towards}. With the same
 notations as previously, we will calculate it only on the pedestrian
 network, since at our scale the transportation network adapts itself
-to local constraints, quantifying its performance that way would have
+to local constraints, quantifying its performance that (laquelle?) way would have
 no sense. The undimensioned ``relative speed'' integrated on all
-travels is defined as follows, with $p_{s}\in[1;+\infty[$,
+trips is defined as follows, with $p_{s}\in[1;+\infty[$,
 \[
 \sigma=\left\Vert \left(\frac{d_{b,s(b)}}{\sqrt{(x_{b}-x_{s(b)})^{2}+(y_{b}-y_{s(b)})^{2}}}\right)_{b\in B}\right\Vert _{p_{s}}
 \]
@@ -402,20 +401,20 @@ travels is defined as follows, with $p_{s}\in[1;+\infty[$,
 \subsubsection{Extraction of data}
 
 The GIS data for building shapes of the Bergsjön district in Göteborg
-were available from internal database, but we didn't have adapted
+are available from internal database, but we do not adapt the
 shapefiles for paths and roads (spatial analysis) or for the transportation
-network. Also for the french district it was totally impossible to
-get data simply (French geographic national institute, IGN, makes
-pay for it). That's why we proceeded to the data extraction by hand
+network. Furthermore, data for the French district could not be accessed to. 
+Indeed, they are not freely provided by the French geographic national institute ("Institut Géographique National",IGN). 
+That's why we proceed to the data extraction on our own
 in a Desktop GIS Software (\cite{QGIS_software}), for all different
 layers : one layer for buildings used for landuse diversity, daylight
 performances calculation and public transportation performances (generation
 of origin/destination matrix), one for pedestrian paths for spatial
 configuration analysis and a third layer for public transportation
-(simplified to the tram lines, since the bus lines appeared not significant
+(simplified to the tram lines, since the bus lines are not significant
 in both districts). Technically, an export to ESRI shapefile format
-made the analysis by the Netlogo handmade code possible. We can see
-in figure  the image of the used layers for both districts.
+makes the analysis by the Netlogo code possible. We can see
+in figure ?? the image of the layers that are used for both districts.
 
 \begin{figure}
 
@@ -435,8 +434,8 @@ in figure  the image of the used layers for both districts.
 
 \subsubsection{Results}
 
-For both districts we have calculated the indicators presented above
-for different values of the parameters for the p-norms. All results
+For both districts we calculate the indicators presented above
+for different values of the parameters for the p-norms. All the results
 are summed up in table 1 for norms as means. The curves show comparison
 of results with different values for the parameters.
 
